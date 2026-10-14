@@ -1,0 +1,51 @@
+
+name: Build Android APK
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      # Download the application source code.
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # Install Java, required by the Android build tools.
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      # Install Flutter on the GitHub build computer.
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      # Generate the standard Android project structure.
+      - name: Generate Android project
+        run: flutter create --platforms=android --project-name=notecraft_ai --org=com.notecraft .
+
+      # Apply custom Android settings and permissions.
+      - name: Patch Android configuration
+        run: python3 scripts/patch_android.py
+
+      # Download Flutter package dependencies.
+      - name: Install dependencies
+        run: flutter pub get
+
+      # Compile the installable Android APK.
+      - name: Build APK
+        run: flutter build apk --debug
+
+      # Make the APK downloadable from GitHub Actions.
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: NoteCraft-AI-Android-APK
+          path: build/app/outputs/flutter-apk/app-debug.apk
